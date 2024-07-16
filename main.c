@@ -7,6 +7,8 @@
 
 #include "service.h"
 
+#define BDD_MODULE_NAME "bdd"
+
 MODULE_AUTHOR("Viacheslav Sidorov");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("BDD: Block Device Driver");
@@ -14,12 +16,22 @@ MODULE_DESCRIPTION("BDD: Block Device Driver");
 static dev device;
 
 static int hwm_init(void) {
+	device._device_major = register_blkdev(0, BDD_MODULE_NAME);
+	if (device._device_major <= 0) {
+		pr_err("Can't find device major number\n");
+		return -ENXIO;
+	}
 	pr_info("Init BDD\n");
 	return 0;
 }
 
 static void hwm_exit(void) {
 	on_disk_close(&device);
+	if (device._device_major) {
+		unregister_blkdev(device._device_major, BDD_MODULE_NAME);
+		device._device_major = 0;
+		pr_info("Virtual block device was unregistred\n");
+	}
 	pr_info("Exit BDD\n");
 }
 
@@ -73,12 +85,6 @@ static int create_disk(const char *arg, const struct kernel_param *kp) {
 
 	pr_info("%s %s %s\n", device.base_device_name, device.base_device_path,
 		device.virtual_device_name);
-
-	device._device_major = register_blkdev(0, device.virtual_device_name);
-	if (device._device_major <= 0) {
-		pr_err("Can't find device major number\n");
-		return -ENXIO;
-	}
 
 	device.base_bdev =
 	    blkdev_get_by_path(device.base_device_path, BLK_OPEN_READ | BLK_OPEN_WRITE, NULL, NULL);

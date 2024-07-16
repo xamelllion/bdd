@@ -7,11 +7,6 @@
 #include <linux/slab.h>
 
 void on_disk_close(dev *device) {
-	if (device->_device_major) {
-		unregister_blkdev(device->_device_major, device->virtual_device_name);
-		device->_device_major = 0;
-		pr_info("Virtual block device was unregistred\n");
-	}
 	if (device->base_bdev) {
 		blkdev_put(device->base_bdev, NULL);
 		device->base_bdev = NULL;
