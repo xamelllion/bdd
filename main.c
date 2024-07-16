@@ -13,7 +13,7 @@ MODULE_DESCRIPTION("BDD: Block Device Driver");
 
 static dev device;
 
-static int hwm_init(void) {
+static int hwm_init(void) { 
   pr_info("Init BDD\n");
   return 0;
 }
