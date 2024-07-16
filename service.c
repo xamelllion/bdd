@@ -14,6 +14,7 @@ void bdd_on_disk_close(bdd_dev *device) {
 	}
 	if (device->gd) {
 		del_gendisk(device->gd);
+		put_disk(device->gd);
 		device->gd = NULL;
 		pr_info("Gendisk of virtual block device was removed\n");
 	}
