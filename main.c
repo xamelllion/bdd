@@ -57,41 +57,32 @@ const struct block_device_operations bdd_fops = {
 /// param *arg : example : sda | vda | ...
 static int create_disk(const char *arg, const struct kernel_param *kp) {
 	// create base block device name
-	if (device.base_device_name) {
-		kfree(device.base_device_name);
-	}
+	kfree(device.base_device_name);
 	device.base_device_name = kzalloc(strlen(arg) + 1, GFP_KERNEL);
 	if (!device.base_device_name)
 		return -ENOMEM;
 	strcpy(device.base_device_name, arg);
 
 	// create virtual block device name
-	if (device.virtual_device_name) {
-		kfree(device.virtual_device_name);
-	}
+	kfree(device.virtual_device_name);
 	device.virtual_device_name = kzalloc(strlen(arg) + strlen("_virtual") + 1, GFP_KERNEL);
 	if (!device.virtual_device_name)
 		return -ENOMEM;
 	sprintf(device.virtual_device_name, "%s_virtual", arg);
 
 	// create base block device path
-	if (device.base_device_path) {
-		kfree(device.base_device_path);
-	}
+	kfree(device.base_device_path);
 	device.base_device_path = kzalloc(strlen("/dev/") + strlen(arg) + 1, GFP_KERNEL);
 	if (!device.base_device_path)
 		return -ENOMEM;
 	sprintf(device.base_device_path, "/dev/%s", arg);
 
-	pr_info("%s %s %s\n", device.base_device_name, device.base_device_path,
-		device.virtual_device_name);
-
 	device.base_bdev =
 	    blkdev_get_by_path(device.base_device_path, BLK_OPEN_READ | BLK_OPEN_WRITE, NULL, NULL);
 	if (IS_ERR(device.base_bdev))
-		pr_err("Opening error!\n");
+		pr_err("Error while oppening base device\n");
 	else
-		pr_info("Was open?\n");
+		pr_info("Base device successfully openned\n");
 
 	device.gd = blk_alloc_disk(NUMA_NO_NODE);
 	if (!device.gd) {
@@ -114,11 +105,10 @@ static int create_disk(const char *arg, const struct kernel_param *kp) {
 }
 
 static int remove_disk(const char *arg, const struct kernel_param *kp) {
-	if (strcmp(device.base_device_name, arg) != 0) {
+	if (strcmp(device.base_device_name, arg) != 0)
 		pr_warn("Zero devices with this name was registred in this module\n");
-	} else {
+	else
 		bdd_on_disk_close(&device);
-	}
 	return 0;
 }
 

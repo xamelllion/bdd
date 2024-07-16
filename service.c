@@ -17,16 +17,11 @@ void bdd_on_disk_close(bdd_dev *device) {
 		device->gd = NULL;
 		pr_info("Gendisk of virtual block device was removed\n");
 	}
-	if (device->base_device_name) {
-		kfree(device->base_device_name);
-		device->base_device_name = NULL;
-	}
-	if (device->virtual_device_name) {
-		kfree(device->virtual_device_name);
-		device->base_device_name = NULL;
-	}
-	if (device->base_device_path) {
-		kfree(device->base_device_path);
-		device->base_device_name = NULL;
-	}
+	kfree(device->base_device_name);
+	kfree(device->virtual_device_name);
+	kfree(device->base_device_path);
+
+	device->base_device_name = NULL;
+	device->virtual_device_name = NULL;
+	device->base_device_path = NULL;
 }
