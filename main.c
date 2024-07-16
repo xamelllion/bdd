@@ -13,9 +13,9 @@ MODULE_AUTHOR("Viacheslav Sidorov");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("BDD: Block Device Driver");
 
-static dev device;
+static bdd_dev device;
 
-static int hwm_init(void) {
+static int bdd_init(void) {
 	device._device_major = register_blkdev(0, BDD_MODULE_NAME);
 	if (device._device_major <= 0) {
 		pr_err("Can't find device major number\n");
@@ -25,8 +25,8 @@ static int hwm_init(void) {
 	return 0;
 }
 
-static void hwm_exit(void) {
-	on_disk_close(&device);
+static void bdd_exit(void) {
+	bdd_on_disk_close(&device);
 	if (device._device_major) {
 		unregister_blkdev(device._device_major, BDD_MODULE_NAME);
 		device._device_major = 0;
@@ -35,7 +35,7 @@ static void hwm_exit(void) {
 	pr_info("Exit BDD\n");
 }
 
-static void blk_submit_bio(struct bio *bio) {
+static void bdd_submit_bio(struct bio *bio) {
 	struct bio* clonned = bio_alloc_clone(device.base_bdev, bio, GFP_KERNEL, bio->bi_pool);
 
 	if (!clonned) {
@@ -49,9 +49,9 @@ static void blk_submit_bio(struct bio *bio) {
 	pr_info("Bio was submitted\n");
 }
 
-const struct block_device_operations md_fops = {
+const struct block_device_operations bdd_fops = {
     .owner = THIS_MODULE,
-    .submit_bio = blk_submit_bio,
+    .submit_bio = bdd_submit_bio,
 };
 
 /// param *arg : example : sda | vda | ...
@@ -105,7 +105,7 @@ static int create_disk(const char *arg, const struct kernel_param *kp) {
 	device.gd->major = device._device_major;
 	device.gd->first_minor = 0;
 	device.gd->minors = 16;
-	device.gd->fops = &md_fops;
+	device.gd->fops = &bdd_fops;
 	set_capacity(device.gd, get_capacity(device.base_bdev->bd_disk));
 
 	int err = add_disk(device.gd);
@@ -117,7 +117,7 @@ static int remove_disk(const char *arg, const struct kernel_param *kp) {
 	if (strcmp(device.base_device_name, arg) != 0) {
 		pr_warn("Zero devices with this name was registred in this module\n");
 	} else {
-		on_disk_close(&device);
+		bdd_on_disk_close(&device);
 	}
 	return 0;
 }
@@ -138,5 +138,5 @@ module_param_cb(set_name, &create_disk_ops, NULL, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(unset_name, "Remove blkdev by name");
 module_param_cb(unset_name, &remove_disk_ops, NULL, S_IRUGO | S_IWUSR);
 
-module_init(hwm_init);
-module_exit(hwm_exit);
+module_init(bdd_init);
+module_exit(bdd_exit);

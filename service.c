@@ -6,7 +6,7 @@
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
 
-void on_disk_close(dev *device) {
+void bdd_on_disk_close(bdd_dev *device) {
 	if (device->base_bdev) {
 		blkdev_put(device->base_bdev, NULL);
 		device->base_bdev = NULL;

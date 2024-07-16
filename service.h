@@ -5,6 +5,6 @@ typedef struct {
 	char *base_device_name;
 	char *virtual_device_name;
 	char *base_device_path;
-} dev;
+} bdd_dev;
 
-void on_disk_close(dev *device);
+void bdd_on_disk_close(bdd_dev *device);
