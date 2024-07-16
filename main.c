@@ -24,9 +24,17 @@ static void hwm_exit(void) {
 }
 
 static void blk_submit_bio(struct bio *bio) {
-	bio->bi_bdev = device.base_bdev;
-	submit_bio(bio);
-	pr_info("bio was submitted\n");
+	struct bio* clonned = bio_alloc_clone(device.base_bdev, bio, GFP_KERNEL, bio->bi_pool);
+
+	if (!clonned) {
+		pr_err("Error while bio clonning\n");
+		return;
+	}
+
+	bio_chain(clonned, bio);
+	submit_bio(clonned);
+	bio_endio(bio);
+	pr_info("Bio was submitted\n");
 }
 
 const struct block_device_operations md_fops = {
@@ -72,9 +80,6 @@ static int create_disk(const char *arg, const struct kernel_param *kp) {
 		return -ENXIO;
 	}
 
-	dev_t devt;
-	int stat = lookup_bdev(device.base_device_path, &devt);
-	pr_info("stat: %d\n", stat);
 	device.base_bdev =
 	    blkdev_get_by_path(device.base_device_path, BLK_OPEN_READ | BLK_OPEN_WRITE, NULL, NULL);
 	if (IS_ERR(device.base_bdev))
@@ -95,11 +100,10 @@ static int create_disk(const char *arg, const struct kernel_param *kp) {
 	device.gd->first_minor = 0;
 	device.gd->minors = 16;
 	device.gd->fops = &md_fops;
+	set_capacity(device.gd, get_capacity(device.base_bdev->bd_disk));
 
-	set_capacity(device.gd, 0);
 	int err = add_disk(device.gd);
-	pr_err("Add disk status: %d\n", err);
-	set_capacity(device.gd, 100000);
+	pr_err("add_disk error code: %d\n", err);
 	return 0;
 }
 
