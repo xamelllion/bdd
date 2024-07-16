@@ -97,11 +97,11 @@ static int create_disk(const char *arg, const struct kernel_param *kp) {
   device.gd->first_minor = 0;
   device.gd->minors = 16;
   device.gd->fops = &md_fops;
+
   set_capacity(device.gd, 0);
-  device.gd->private_data = &device;
   int err = add_disk(device.gd);
+  pr_err("Add disk status: %d\n", err);
   set_capacity(device.gd, 100000);
-  pr_err("%d\n", err);
   return 0;
 }
 
