@@ -4,6 +4,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
+#include <linux/version.h>
 
 #include "service.h"
 
@@ -36,8 +37,11 @@ static void bdd_exit(void) {
 }
 
 static void bdd_submit_bio(struct bio *bio) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+	struct bio* clonned = bio_alloc_clone(device.base_bdev_handle->bdev, bio, GFP_KERNEL, bio->bi_pool);
+#else
 	struct bio* clonned = bio_alloc_clone(device.base_bdev, bio, GFP_KERNEL, bio->bi_pool);
-
+#endif
 	if (!clonned) {
 		pr_err("Error while bio clonning\n");
 		return;
@@ -77,9 +81,19 @@ static int create_disk(const char *arg, const struct kernel_param *kp) {
 		return -ENOMEM;
 	sprintf(device.base_device_path, "/dev/%s", arg);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+	device.base_bdev_handle =
+	    bdev_open_by_path(device.base_device_path, BLK_OPEN_READ | BLK_OPEN_WRITE, NULL, NULL);
+#else
 	device.base_bdev =
 	    blkdev_get_by_path(device.base_device_path, BLK_OPEN_READ | BLK_OPEN_WRITE, NULL, NULL);
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+	if (IS_ERR(device.base_bdev_handle))
+#else
 	if (IS_ERR(device.base_bdev))
+#endif
 		pr_err("Error while oppening base device\n");
 	else
 		pr_info("Base device successfully openned\n");
@@ -97,7 +111,11 @@ static int create_disk(const char *arg, const struct kernel_param *kp) {
 	device.gd->first_minor = 0;
 	device.gd->minors = 16;
 	device.gd->fops = &bdd_fops;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+	set_capacity(device.gd, get_capacity(device.base_bdev_handle->bdev->bd_disk));
+#else
 	set_capacity(device.gd, get_capacity(device.base_bdev->bd_disk));
+#endif
 
 	int err = add_disk(device.gd);
 	pr_err("add_disk error code: %d\n", err);

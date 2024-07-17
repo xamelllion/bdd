@@ -7,9 +7,15 @@
 #include <linux/slab.h>
 
 void bdd_on_disk_close(bdd_dev *device) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+	if (device->base_bdev_handle) {
+		bdev_release(device->base_bdev_handle);
+		device->base_bdev_handle = NULL;
+#else
 	if (device->base_bdev) {
 		blkdev_put(device->base_bdev, NULL);
 		device->base_bdev = NULL;
+#endif
 		pr_info("Virtual block device was removed\n");
 	}
 	if (device->gd) {
