@@ -18,6 +18,10 @@ void bdd_on_disk_close(bdd_dev *device) {
 		device->gd = NULL;
 		pr_info("Gendisk of virtual block device was removed\n");
 	}
+	if (device->bs) {
+		bioset_exit(device->bs);
+		pr_info("Bioset was removed\n");
+	}
 	kfree(device->base_device_name);
 	kfree(device->virtual_device_name);
 	kfree(device->base_device_path);

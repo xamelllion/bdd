@@ -16,13 +16,25 @@ MODULE_DESCRIPTION("BDD: Block Device Driver");
 static bdd_dev device;
 
 static int bdd_init(void) {
+	int err;
 	device._device_major = register_blkdev(0, BDD_MODULE_NAME);
 	if (device._device_major <= 0) {
 		pr_err("Can't find device major number\n");
 		return -ENXIO;
 	}
+	device.bs = kzalloc(sizeof(struct bio_set), GFP_KERNEL);
+	if (!device.bs)
+		return -ENOMEM;
+	err = bioset_init(device.bs, BIO_POOL_SIZE, 0, BIOSET_NEED_BVECS);
+	if (err)
+		goto interrupt;
 	pr_info("Init BDD\n");
 	return 0;
+
+interrupt:
+	kfree(device.bs);
+	pr_err("Error in bioset_init\n");
+	return -ENOMEM;
 }
 
 static void bdd_exit(void) {
@@ -35,17 +47,22 @@ static void bdd_exit(void) {
 	pr_info("Exit BDD\n");
 }
 
-static void bdd_submit_bio(struct bio *bio) {
-	struct bio* clonned = bio_alloc_clone(device.base_bdev, bio, GFP_KERNEL, bio->bi_pool);
+static void bdd_bio_end_io(struct bio *bio) {
+	bio_endio(bio->bi_private);
+	bio_put(bio);
+}
 
-	if (!clonned) {
+static void bdd_submit_bio(struct bio *bio) {
+	struct bio* clone = bio_alloc_clone(device.base_bdev, bio, GFP_KERNEL, device.bs);
+
+	if (!clone) {
 		pr_err("Error while bio clonning\n");
 		return;
 	}
 
-	bio_chain(clonned, bio);
-	submit_bio(clonned);
-	bio_endio(bio);
+	clone->bi_private = bio;
+	clone->bi_end_io = bdd_bio_end_io;
+	submit_bio(clone);
 	pr_info("Bio was submitted\n");
 }
 
