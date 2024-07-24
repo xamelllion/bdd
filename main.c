@@ -15,7 +15,8 @@ MODULE_DESCRIPTION("BDD: Block Device Driver");
 
 static bdd_dev device;
 
-static int bdd_init(void) {
+static int bdd_init(void)
+{
 	int err;
 	device._device_major = register_blkdev(0, BDD_MODULE_NAME);
 	if (device._device_major <= 0) {
@@ -33,11 +34,13 @@ static int bdd_init(void) {
 
 interrupt:
 	kfree(device.bs);
+	unregister_blkdev(device._device_major, BDD_MODULE_NAME);
 	pr_err("Error in bioset_init\n");
 	return -ENOMEM;
 }
 
-static void bdd_exit(void) {
+static void bdd_exit(void)
+{
 	bdd_on_disk_close(&device);
 	if (device._device_major) {
 		unregister_blkdev(device._device_major, BDD_MODULE_NAME);
@@ -47,12 +50,14 @@ static void bdd_exit(void) {
 	pr_info("Exit BDD\n");
 }
 
-static void bdd_bio_end_io(struct bio *bio) {
+static void bdd_bio_end_io(struct bio *bio)
+{
 	bio_endio(bio->bi_private);
 	bio_put(bio);
 }
 
-static void bdd_submit_bio(struct bio *bio) {
+static void bdd_submit_bio(struct bio *bio)
+{
 	struct bio* clone = bio_alloc_clone(device.base_bdev, bio, GFP_KERNEL, device.bs);
 
 	if (!clone) {
@@ -72,7 +77,8 @@ const struct block_device_operations bdd_fops = {
 };
 
 /// param *arg : example : sda | vda | ...
-static int create_disk(const char *arg, const struct kernel_param *kp) {
+static int create_disk(const char *arg, const struct kernel_param *kp)
+{
 	// create base block device name
 	kfree(device.base_device_name);
 	device.base_device_name = kzalloc(strlen(arg) + 1, GFP_KERNEL);
@@ -121,7 +127,8 @@ static int create_disk(const char *arg, const struct kernel_param *kp) {
 	return 0;
 }
 
-static int remove_disk(const char *arg, const struct kernel_param *kp) {
+static int remove_disk(const char *arg, const struct kernel_param *kp)
+{
 	if (strcmp(device.base_device_name, arg) != 0)
 		pr_warn("Zero devices with this name was registred in this module\n");
 	else
