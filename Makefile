@@ -1,8 +1,5 @@
 name = bdd
 ip   = 192.168.122.72
-obj-m += $(name).o
-$(name)-objs += ./main.o ./service.o
-
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
