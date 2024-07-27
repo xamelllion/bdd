@@ -6,11 +6,12 @@
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
 
+
 void bdd_on_disk_close(bdd_dev *device)
 {
-	if (device->base_bdev) {
-		blkdev_put(device->base_bdev, NULL);
-		device->base_bdev = NULL;
+	if (device->base_bdev_handle) {
+		bdev_release(device->base_bdev_handle);
+		device->base_bdev_handle = NULL;
 		pr_info("Virtual block device was removed\n");
 	}
 	if (device->gd) {

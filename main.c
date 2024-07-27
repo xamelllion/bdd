@@ -4,6 +4,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
+#include <linux/version.h>
 
 #include "service.h"
 
@@ -58,7 +59,7 @@ static void bdd_bio_end_io(struct bio *bio)
 
 static void bdd_submit_bio(struct bio *bio)
 {
-	struct bio* clone = bio_alloc_clone(device.base_bdev, bio, GFP_KERNEL, device.bs);
+	struct bio* clone = bio_alloc_clone(device.base_bdev_handle->bdev, bio, GFP_KERNEL, device.bs);
 
 	if (!clone) {
 		pr_err("Error while bio clonning\n");
@@ -100,9 +101,10 @@ static int create_disk(const char *arg, const struct kernel_param *kp)
 		return -ENOMEM;
 	sprintf(device.base_device_path, "/dev/%s", arg);
 
-	device.base_bdev =
-	    blkdev_get_by_path(device.base_device_path, BLK_OPEN_READ | BLK_OPEN_WRITE, NULL, NULL);
-	if (IS_ERR(device.base_bdev))
+	device.base_bdev_handle =
+	    bdev_open_by_path(device.base_device_path, BLK_OPEN_READ | BLK_OPEN_WRITE, NULL, NULL);
+
+	if (IS_ERR(device.base_bdev_handle))
 		pr_err("Error while oppening base device\n");
 	else
 		pr_info("Base device successfully openned\n");
@@ -120,7 +122,7 @@ static int create_disk(const char *arg, const struct kernel_param *kp)
 	device.gd->first_minor = 0;
 	device.gd->minors = 16;
 	device.gd->fops = &bdd_fops;
-	set_capacity(device.gd, get_capacity(device.base_bdev->bd_disk));
+	set_capacity(device.gd, get_capacity(device.base_bdev_handle->bdev->bd_disk));
 
 	int err = add_disk(device.gd);
 	pr_err("add_disk error code: %d\n", err);
