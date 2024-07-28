@@ -1,5 +1,5 @@
 name = bdd
-ip   = 192.168.122.72
+ip   = 192.168.122.186
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
@@ -21,3 +21,10 @@ echo_set:
 
 echo_unset:
 	echo -n "sda" >  /sys/module/$(name)/parameters/unset_name
+
+ddw:
+	head -c 24000 /dev/random > /tmp/rdata.txt
+	dd of=/dev/sda_virtual if=/tmp/data.txt iflag=direct bs=4K count=1 seek=0
+
+ddr:
+	dd if=/dev/sda_virtual of=/tmp/wdata.txt iflag=direct bs=4K count=1 skip=0

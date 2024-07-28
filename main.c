@@ -7,6 +7,7 @@
 #include <linux/version.h>
 
 #include "service.h"
+#include "hashmap.h"
 
 #define BDD_MODULE_NAME "bdd"
 
@@ -30,6 +31,8 @@ static int bdd_init(void)
 	err = bioset_init(device.bs, BIO_POOL_SIZE, 0, BIOSET_NEED_BVECS);
 	if (err)
 		goto interrupt;
+	device.last_unused_sector = 0;
+	device.map = hashmap_init();
 	pr_info("Init BDD\n");
 	return 0;
 
@@ -48,6 +51,7 @@ static void bdd_exit(void)
 		device._device_major = 0;
 		pr_info("Virtual block device was unregistred\n");
 	}
+	hashmap_free(device.map);
 	pr_info("Exit BDD\n");
 }
 
@@ -68,8 +72,29 @@ static void bdd_submit_bio(struct bio *bio)
 
 	clone->bi_private = bio;
 	clone->bi_end_io = bdd_bio_end_io;
+
+	if (bio_op(clone) == REQ_OP_READ) {
+		hashmap_value val = hashmap_get(device.map, bio->bi_iter.bi_sector);
+		if (!val.has_value) {
+			pr_warn("Reading operation from unmapped sector: %u\n", clone->bi_iter.bi_sector);
+		} else {
+			clone->bi_iter.bi_sector = val.value;
+			pr_info("Redirect read request from %u to %u\n", bio->bi_iter.bi_sector, val.value);
+		}
+	} else if (bio_op(clone) == REQ_OP_WRITE) {
+		hashmap_value val = hashmap_get(device.map, bio->bi_iter.bi_sector);
+		if (!val.has_value) {
+			hashmap_put(device.map, bio->bi_iter.bi_sector, device.last_unused_sector);
+			clone->bi_iter.bi_sector = device.last_unused_sector;
+			pr_info("Redirect write request from %u to %u\n", bio->bi_iter.bi_sector, device.last_unused_sector);
+			device.last_unused_sector += 8; // plus 8 sectors == plus 4096 bytes
+		} else {
+			clone->bi_iter.bi_sector = val.value;
+			pr_info("Rewrite sector %u\n", val.value);
+		}
+	}
+
 	submit_bio(clone);
-	pr_info("Bio was submitted\n");
 }
 
 const struct block_device_operations bdd_fops = {
@@ -125,7 +150,8 @@ static int create_disk(const char *arg, const struct kernel_param *kp)
 	set_capacity(device.gd, get_capacity(device.base_bdev_handle->bdev->bd_disk));
 
 	int err = add_disk(device.gd);
-	pr_err("add_disk error code: %d\n", err);
+	if (err)
+		pr_err("Error in add_disk\n");
 	return 0;
 }
 

@@ -6,7 +6,6 @@
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
 
-
 void bdd_on_disk_close(bdd_dev *device)
 {
 	if (device->base_bdev_handle) {
