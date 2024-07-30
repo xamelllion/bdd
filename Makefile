@@ -24,7 +24,7 @@ echo_unset:
 
 ddw:
 	head -c 24000 /dev/random > /tmp/rdata.txt
-	dd of=/dev/sda_virtual if=/tmp/data.txt iflag=direct bs=4K count=1 seek=0
+	dd of=/dev/sda_virtual if=/tmp/rdata.txt iflag=direct bs=4K count=1 seek=0
 
 ddr:
 	dd if=/dev/sda_virtual of=/tmp/wdata.txt iflag=direct bs=4K count=1 skip=0
