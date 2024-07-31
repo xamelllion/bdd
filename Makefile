@@ -1,5 +1,5 @@
 name = bdd
-ip   = 192.168.122.186
+ip   = 192.168.122.42
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
