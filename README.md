@@ -15,3 +15,19 @@ make ins
 ```bash
 make rm
 ```
+
+### Test
+```bash
+# build and install
+make && make ins
+
+# setup virtual dick
+# for 'sda' driver will create 'sda_virtual' disk
+echo -n "sda" > /sys/module/$(name)/parameters/set_name
+
+# execute test
+python3 ./scripts/test.py
+
+# remove module from system
+make rm
+```

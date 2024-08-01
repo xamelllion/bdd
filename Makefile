@@ -17,10 +17,10 @@ rm:
 	rmmod $(name)
 
 echo_set:
-	echo -n "sda" >  /sys/module/$(name)/parameters/set_name
+	echo -n "sda" > /sys/module/$(name)/parameters/set_name
 
 echo_unset:
-	echo -n "sda" >  /sys/module/$(name)/parameters/unset_name
+	echo -n "sda" > /sys/module/$(name)/parameters/unset_name
 
 ddw:
 	head -c 24000 /dev/random > /tmp/rdata.txt
