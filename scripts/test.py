@@ -39,13 +39,15 @@ for x in range(1, 10):
 for i in range(len(rainbow)):
     seek = rainbow_sectors[i] // 8
     subprocess.call(
-        f'dd of=/dev/sda_virtual if=/tmp/bdd/{rainbow[i]}.txt oflag=direct block_size=4K count=1 seek={seek}'.split()
+        f'dd of=/dev/sda_virtual if=/tmp/bdd/{rainbow[i]}.txt oflag=direct bs=4K count=1 seek={seek}'.split(),
+        stderr=subprocess.DEVNULL
     )
     print(f"{Colors.BLUE}Write color '{rainbow[i]}' to sector '{seek*8}'{Colors.ENDC}")
 
 # read all written data from actual disk
 subprocess.call(
-    'dd if=/dev/sda of=/tmp/bdd/dump.txt iflag=direct block_size=4K count=9 skip=0'.split()
+    'dd if=/dev/sda of=/tmp/bdd/dump.txt iflag=direct bs=4K count=9 skip=0'.split(),
+    stderr=subprocess.DEVNULL
 )
 
 # check invariant of log-structuring

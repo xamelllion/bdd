@@ -23,7 +23,7 @@ make && make ins
 
 # setup virtual dick
 # for 'sda' driver will create 'sda_virtual' disk
-echo -n "sda" > /sys/module/$(name)/parameters/set_name
+echo -n "sda" > /sys/module/bdd/parameters/set_name
 
 # execute test
 python3 ./scripts/test.py
