@@ -42,7 +42,8 @@ for i in range(len(rainbow)):
         f'dd of=/dev/sda_virtual if=/tmp/bdd/{rainbow[i]}.txt oflag=direct bs=4K count=1 seek={seek}'.split(),
         stderr=subprocess.DEVNULL
     )
-    print(f"{Colors.BLUE}Write color '{rainbow[i]}' to sector '{seek*8}'{Colors.ENDC}")
+    print(f"{Colors.BLUE}Write chunk '{rainbow[i]}' to sector '{seek*8}'{Colors.ENDC}")
+print()
 
 # read all written data from actual disk
 subprocess.call(
@@ -58,8 +59,9 @@ with open('/tmp/bdd/dump.txt') as f:
         print(f'{Colors.FAIL}Error: dump size {len(dump_str)//block_size} mismatch actual written size 9{Colors.ENDC}')
         exit()
     for x in range(0, len(dump_str), block_size):
+        print(f"{Colors.CYAN}Read chunk '{dump_str[x]}' from sector '{x//512}'{Colors.ENDC}")
         if int(dump_str[x]) != rainbow[x//block_size]:
             print(f'{Colors.FAIL}Error: address shuffling{Colors.ENDC}')
             exit()
 
-print(f'{Colors.GREEN}Successful test{Colors.ENDC}')
+print(f'\n{Colors.GREEN}Successful test!{Colors.ENDC}')
