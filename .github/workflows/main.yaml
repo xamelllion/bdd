@@ -1,4 +1,4 @@
-name: BDD ci file
+name: BDD CI
 
 on:
   push:
@@ -21,3 +21,14 @@ jobs:
           curl -O https://raw.githubusercontent.com/torvalds/linux/master/scripts/checkpatch.pl
           sudo chmod u+x ./checkpatch.pl ./scripts/linter.sh
           ./scripts/linter.sh
+  integrate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: integrate
+        run: |
+          make && sudo make ins
+          echo -n "sdb" | sudo tee /sys/module/bdd/parameters/set_name
+          sudo python3 ./scripts/test.py sdb
+          sleep 5
+          sudo make rm

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import subprocess
+import argparse
 import random
 
 class Colors:
@@ -11,6 +12,10 @@ class Colors:
     WARNING = '\033[93m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+
+parser = argparse.ArgumentParser()
+parser.add_argument('disk_name')
+args = parser.parse_args()
 
 disk_size = 1024*1024
 block_size = 4096
@@ -39,7 +44,7 @@ for x in range(1, 10):
 for i in range(len(rainbow)):
     seek = rainbow_sectors[i] // 8
     subprocess.call(
-        f'dd of=/dev/sda_virtual if=/tmp/bdd/{rainbow[i]}.txt oflag=direct bs=4K count=1 seek={seek}'.split(),
+        f'dd of=/dev/{args.disk_name}_virtual if=/tmp/bdd/{rainbow[i]}.txt oflag=direct bs=4K count=1 seek={seek}'.split(),
         stderr=subprocess.DEVNULL
     )
     print(f"{Colors.BLUE}Write chunk '{rainbow[i]}' to sector '{seek*8}'{Colors.ENDC}")
@@ -47,7 +52,7 @@ print()
 
 # read all written data from actual disk
 subprocess.call(
-    'dd if=/dev/sda of=/tmp/bdd/dump.txt iflag=direct bs=4K count=9 skip=0'.split(),
+    f'dd if=/dev/{args.disk_name} of=/tmp/bdd/dump.txt iflag=direct bs=4K count=9 skip=0'.split(),
     stderr=subprocess.DEVNULL
 )
 
@@ -57,11 +62,11 @@ with open('/tmp/bdd/dump.txt') as f:
     dump_str = f.read()
     if len(dump_str)//block_size != 9:
         print(f'{Colors.FAIL}Error: dump size {len(dump_str)//block_size} mismatch actual written size 9{Colors.ENDC}')
-        exit()
+        exit(1)
     for x in range(0, len(dump_str), block_size):
         print(f"{Colors.CYAN}Read chunk '{dump_str[x]}' from sector '{x//512}'{Colors.ENDC}")
         if int(dump_str[x]) != rainbow[x//block_size]:
             print(f'{Colors.FAIL}Error: address shuffling{Colors.ENDC}')
-            exit()
+            exit(1)
 
 print(f'\n{Colors.GREEN}Successful test!{Colors.ENDC}')
